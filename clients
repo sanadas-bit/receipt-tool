@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>関与先管理</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { theme: { extend: { fontFamily: { sans: ['"Noto Sans JP"', '"Inter"', 'system-ui', 'sans-serif'] } } } };
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;600;700;800&display=swap');
+
+        body {
+            background: #0f172a;
+        }
+
+        .nav-item {
+            transition: all .2s ease;
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, .08);
+        }
+
+        .nav-item.active {
+            background: rgba(99, 102, 241, .2);
+            border-right: 3px solid #818cf8;
+        }
+
+        .client-row {
+            transition: all .2s ease;
+        }
+
+        .client-row:hover {
+            background: rgba(99, 102, 241, .05);
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-up {
+            animation: fadeUp .4s ease forwards;
+            opacity: 0;
+        }
+
+        .shimmer {
+            background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+
+        @keyframes shimmer {
+            0% {
+                background-position: 200% 0;
+            }
+
+            100% {
+                background-position: -200% 0;
+            }
+        }
+
+        @keyframes modalIn {
+            from {
+                opacity: 0;
+                transform: scale(.95);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .modal-anim {
+            animation: modalIn .2s ease;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen font-sans text-slate-200">
+
+    <!-- ===== SIDEBAR ===== -->
+    <aside
+        class="fixed left-0 top-0 bottom-0 w-64 bg-slate-900/80 backdrop-blur-xl border-r border-slate-700/50 flex flex-col z-20">
+        <div class="px-5 py-5 border-b border-slate-700/50">
+            <div class="flex items-center gap-3">
+                <div
+                    class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-sm font-bold text-white tracking-tight">データ化ツール</h1>
+                    <p class="text-[10px] text-slate-400">Receipt Digitizer</p>
+                </div>
+            </div>
+        </div>
+        <nav class="flex-1 px-3 py-4 space-y-1">
+            <a id="navDashboard" href="#"
+                class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                </svg>
+                ダッシュボード
+            </a>
+            <a id="navTool" href="#"
+                class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                領収書データ化
+            </a>
+            <a href="#" onclick="return false;"
+                class="nav-item active flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white">
+                <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                関与先管理
+            </a>
+            <div class="pt-4 pb-2 px-3">
+                <p class="text-[10px] font-semibold text-slate-500 uppercase tracking-widest">Coming Soon</p>
+            </div>
+            <a id="navSearch" href="#"
+                class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                データ検索
+            </a>
+            <span
+                class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 cursor-not-allowed">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                月次レポート
+            </span>
+            <span
+                class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 cursor-not-allowed">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                設定
+            </span>
+        </nav>
+        <div class="px-5 py-4 border-t border-slate-700/50">
+            <div class="flex items-center gap-2">
+                <div class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
+                <span class="text-[11px] text-slate-500">System Online</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- ===== MAIN CONTENT ===== -->
+    <main class="ml-64 min-h-screen">
+        <header class="sticky top-0 z-10 bg-slate-900/60 backdrop-blur-xl border-b border-slate-700/30 px-8 py-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 id="pageTitle" class="text-xl font-bold text-white">関与先管理</h2>
+                    <p id="pageDesc" class="text-xs text-slate-400 mt-0.5">関与先の追加・編集・削除と統計情報</p>
+                </div>
+                <div class="flex items-center gap-4">
+                    <!-- Tab Switcher -->
+                    <div class="bg-slate-800 p-1 rounded-xl border border-slate-700/50 flex items-center">
+                        <button onclick="switchTab('clients')" id="tabBtnClients"
+                            class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all bg-indigo-600 text-white shadow-lg shadow-indigo-500/20">関与先</button>
+                        <button onclick="switchTab('staff')" id="tabBtnStaff"
+                            class="px-4 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white">担当者</button>
+                    </div>
+                    <button id="mainActionBtn" onclick="showAddModal()"
+                        class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg px-4 py-2.5 transition-all shadow-lg shadow-indigo-500/20 flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                        <span id="btnText">関与先を追加</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <div class="px-8 py-6">
+            <!-- Client Table -->
+            <div id="panelClients"
+                class="bg-slate-800/50 border border-slate-700/40 rounded-2xl overflow-hidden shadow-sm">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="border-b border-slate-700/50 bg-slate-800/80">
+                                <th
+                                    class="text-left px-6 py-4 text-[10px] font-semibold text-slate-500 uppercase tracking-wider w-8">
+                                    #</th>
+                                <th
+                                    class="text-left px-6 py-4 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
+                                    関与先名</th>
+                                <th
+                                    class="text-right px-6 py-4 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
+                                    データ件数</th>
+                                <th
+                                    class="text-right px-6 py-4 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
+                                    合計金額</th>
+                                <th
+                                    class="text-left px-6 py-4 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
+                                    最終更新</th>
+                                <th
+                                    class="text-center px-6 py-4 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
+                                    操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="clientsBody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Staff Table -->
+            <div id="panelStaff"
+                class="hidden bg-slate-800/50 border border-slate-700/40 rounded-2xl overflow-hidden shadow-sm">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="border-b border-slate-700/50 bg-slate-800/80">
+                                <th
+                                    class="text-left px-6 py-4 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
+                                    担当者名</th>
+                                <th
+                                    class="text-left px-6 py-4 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
+                                    担当関与先 (紐付け)</th>
+                                <th
+                                    class="text-center px-6 py-4 text-[10px] font-semibold text-slate-500 uppercase tracking-wider w-32">
+                                    操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="staffBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- ===== ADD/EDIT MODAL ===== -->
+    <div id="modal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center">
+        <div class="modal-anim bg-slate-800 border border-slate-700/60 rounded-2xl shadow-2xl w-full max-w-md p-6">
+            <h3 id="modalTitle" class="text-lg font-bold text-white mb-4">関与先を追加</h3>
+            <div class="space-y-4">
+                <div>
+                    <label
+                        class="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">関与先名</label>
+                    <input type="text" id="modalInput" placeholder="例：株式会社テスト"
+                        class="w-full bg-slate-900/60 border border-slate-600/50 rounded-lg px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all">
+                </div>
+                <input type="hidden" id="modalOldName" value="">
+            </div>
+            <div class="flex justify-end gap-3 mt-6">
+                <button onclick="closeModal()"
+                    class="px-4 py-2 text-sm font-medium text-slate-400 hover:text-white bg-slate-700/50 hover:bg-slate-700 rounded-lg transition-colors">キャンセル</button>
+                <button onclick="submitModal()" id="modalSubmit"
+                    class="px-5 py-2 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors shadow-lg shadow-indigo-500/20">追加</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== DELETE CONFIRM MODAL ===== -->
+    <div id="deleteModal"
+        class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center">
+        <div class="modal-anim bg-slate-800 border border-slate-700/60 rounded-2xl shadow-2xl w-full max-w-sm p-6">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-10 h-10 bg-rose-500/15 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-base font-bold text-white">関与先を削除</h3>
+                    <p class="text-xs text-slate-400">この操作は取り消せません</p>
+                </div>
+            </div>
+            <p class="text-sm text-slate-300 mb-1">「<span id="deleteTargetName"
+                    class="font-bold text-white"></span>」を削除しますか？</p>
+            <p class="text-xs text-slate-500 mb-5">※ スプレッドシートに保存済みのデータは削除されません</p>
+            <div class="flex justify-end gap-3">
+                <button onclick="closeDeleteModal()"
+                    class="px-4 py-2 text-sm font-medium text-slate-400 hover:text-white bg-slate-700/50 hover:bg-slate-700 rounded-lg transition-colors">キャンセル</button>
+                <button onclick="confirmDelete()"
+                    class="px-5 py-2 text-sm font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-lg transition-colors">削除する</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== TOAST ===== -->
+    <div id="toastBox" class="fixed bottom-4 right-4 z-50 space-y-2 pointer-events-none"></div>
+
+    <script>
+        var S = { clients: [], allItems: [], BASE_URL: '', activeTab: 'clients', staff: {} };
+
+        document.addEventListener('DOMContentLoaded', function () {
+            google.script.run.withSuccessHandler(function (url) {
+                S.BASE_URL = url;
+                document.getElementById('navDashboard').onclick = function (e) { e.preventDefault(); window.top.location.href = url + '?page=dashboard'; };
+                document.getElementById('navTool').onclick = function (e) { e.preventDefault(); window.top.location.href = url + '?page=tool'; };
+                document.getElementById('navSearch').onclick = function (e) { e.preventDefault(); window.top.location.href = url + '?page=search'; };
+            }).getAppUrl();
+
+            loadAllData();
+        });
+
+        function switchTab(tab) {
+            S.activeTab = tab;
+            var isStaff = tab === 'staff';
+            document.getElementById('panelClients').classList.toggle('hidden', isStaff);
+            document.getElementById('panelStaff').classList.toggle('hidden', !isStaff);
+
+            // UI updates
+            document.getElementById('pageTitle').textContent = isStaff ? '担当者管理' : '関与先管理';
+            document.getElementById('pageDesc').textContent = isStaff ? '担当者の登録と関与先の紐付け' : '関与先の追加・編集・削除と統計情報';
+            document.getElementById('btnText').textContent = isStaff ? '担当者を追加' : '関与先を追加';
+
+            var btnC = document.getElementById('tabBtnClients');
+            var btnS = document.getElementById('tabBtnStaff');
+            if (isStaff) {
+                btnS.className = "px-4 py-1.5 rounded-lg text-xs font-bold transition-all bg-indigo-600 text-white shadow-lg shadow-indigo-500/20";
+                btnC.className = "px-4 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white";
+                renderStaff();
+            } else {
+                btnC.className = "px-4 py-1.5 rounded-lg text-xs font-bold transition-all bg-indigo-600 text-white shadow-lg shadow-indigo-500/20";
+                btnS.className = "px-4 py-1.5 rounded-lg text-xs font-bold transition-all text-slate-400 hover:text-white";
+                renderClients();
+            }
+        }
+
+        function loadAllData() {
+            var calls = 0;
+            function check() { if (++calls === 3) { renderClients(); renderStaff(); } }
+
+            google.script.run.withSuccessHandler(function (cl) {
+                S.clients = cl || [];
+                check();
+            }).getClientsWithStats(); // 既存の統計付きリスト取得を利用
+
+            google.script.run.withSuccessHandler(function (data) {
+                //getAllSheetDataの結果は特には使わないが、一応保持
+                S.allItems = data || [];
+                check();
+            }).getAllSheetData();
+
+            google.script.run.withSuccessHandler(function (staff) {
+                S.staff = staff || {};
+                check();
+            }).getStaffList();
+        }
+
+        function renderClients() {
+            var tbody = document.getElementById('clientsBody');
+            var clients = S.clients;
+            if (!clients || clients.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-12 text-center text-slate-500 text-xs">関与先が登録されていません</td></tr>';
+                return;
+            }
+            tbody.innerHTML = '';
+            clients.forEach(function (c, i) {
+                var tr = document.createElement('tr');
+                tr.className = 'client-row border-b border-slate-700/30 fade-up';
+                tr.style.animationDelay = (i * 0.05) + 's';
+
+                var colors = ['from-indigo-500 to-blue-600', 'from-purple-500 to-pink-600', 'from-emerald-500 to-teal-600', 'from-amber-500 to-orange-600', 'from-rose-500 to-red-600', 'from-cyan-500 to-sky-600'];
+                var color = colors[i % colors.length];
+                var initial = (c.name || '?').charAt(0);
+
+                tr.innerHTML =
+                    '<td class="px-6 py-4 text-slate-500 text-xs">' + (i + 1) + '</td>' +
+                    '<td class="px-6 py-4">' +
+                    '<div class="flex items-center gap-3">' +
+                    '<div class="w-9 h-9 bg-gradient-to-br ' + color + ' rounded-lg flex items-center justify-center text-white font-bold text-sm shadow-sm flex-shrink-0">' + esc(initial) + '</div>' +
+                    '<span class="text-white font-semibold">' + esc(c.name) + '</span>' +
+                    '</div>' +
+                    '</td>' +
+                    '<td class="px-6 py-4 text-right text-slate-300 font-mono">' + c.count + ' <span class="text-slate-500">件</span></td>' +
+                    '<td class="px-6 py-4 text-right text-emerald-400 font-semibold font-mono">¥' + Number(c.totalAmount).toLocaleString() + '</td>' +
+                    '<td class="px-6 py-4 text-slate-400 text-xs">' + esc(c.lastDate || '—') + '</td>' +
+                    '<td class="px-6 py-4 text-center">' +
+                    '<div class="flex items-center justify-center gap-1">' +
+                    '<button onclick="openTool(\'' + escAttr(c.name) + '\')" title="データ化ツールを開く" class="p-2 rounded-lg text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 transition-colors">' +
+                    '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>' +
+                    '</button>' +
+                    '<button onclick="showEditModal(\'' + escAttr(c.name) + '\')" title="名称変更" class="p-2 rounded-lg text-slate-400 hover:text-amber-400 hover:bg-amber-500/10 transition-colors">' +
+                    '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>' +
+                    '</button>' +
+                    '<button onclick="showDeleteModal(\'' + escAttr(c.name) + '\')" title="削除" class="p-2 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors">' +
+                    '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>' +
+                    '</button>' +
+                    '</div>' +
+                    '</td>';
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderStaff() {
+            var tbody = document.getElementById('staffBody');
+            var staffNames = Object.keys(S.staff).sort();
+
+            if (!staffNames.length) {
+                tbody.innerHTML = '<tr><td colspan="3" class="px-6 py-12 text-center text-slate-500 text-xs">登録されている担当者がありません</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = '';
+            staffNames.forEach(function (name) {
+                var tr = document.createElement('tr');
+                tr.className = 'border-b border-slate-700/30 hover:bg-slate-700/20 transition-colors';
+
+                var linkedClients = S.staff[name] || [];
+                var clientsHtml = linkedClients.length ?
+                    linkedClients.map(function (c) { return '<span class="inline-block bg-slate-700 text-slate-300 px-2 py-0.5 rounded text-[10px] mr-1 mb-1">' + esc(c) + '</span>'; }).join('') :
+                    '<span class="text-slate-600 italic text-[10px]">未紐付け</span>';
+
+                tr.innerHTML =
+                    '<td class="px-6 py-4 font-bold text-slate-200">' + esc(name) + '</td>' +
+                    '<td class="px-6 py-4">' +
+                    '<div class="flex flex-wrap items-center gap-1">' + clientsHtml +
+                    '<button onclick="showAssignModal(\'' + escAttr(name) + '\')" class="ml-2 text-indigo-400 hover:text-indigo-300 text-[10px] font-bold underline">紐付け変更</button>' +
+                    '</div></td>' +
+                    '<td class="px-6 py-4 text-center">' +
+                    '<button onclick="deleteStaff(\'' + escAttr(name) + '\')" class="p-2 text-slate-400 hover:text-rose-400 hover:bg-rose-400/10 rounded-lg transition-all"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button>' +
+                    '</td>';
+                tbody.appendChild(tr);
+            });
+        }
+
+        // --- Logic Staff ---
+        function deleteStaff(name) {
+            if (!confirm('担当者「' + name + '」を削除しますか？')) return;
+            delete S.staff[name];
+            saveStaff();
+        }
+
+        function saveStaff() {
+            google.script.run.withSuccessHandler(function () {
+                toast('担当者情報を保存しました', 'success');
+                renderStaff();
+            }).saveStaffList(S.staff);
+        }
+
+        function showAssignModal(staffName) {
+            var linked = S.staff[staffName] || [];
+            var html = '<div class="space-y-1 max-h-[40vh] overflow-y-auto pr-2 custom-scroll">';
+            S.clients.forEach(function (c) {
+                var cName = typeof c === 'string' ? c : c.name;
+                var isChecked = linked.indexOf(cName) !== -1;
+                html += '<label class="flex items-center gap-3 p-2 hover:bg-slate-700/50 rounded-lg cursor-pointer transition-colors">' +
+                    '<input type="checkbox" class="assign-check w-4 h-4 rounded border-slate-600 bg-slate-900 text-indigo-600 focus:ring-indigo-500/20" value="' + escAttr(cName) + '" ' + (isChecked ? 'checked' : '') + '>' +
+                    '<span class="text-sm text-slate-300">' + esc(cName) + '</span>' +
+                    '</label>';
+            });
+            html += '</div>';
+
+            document.getElementById('modalTitle').textContent = staffName + ' の担当関与先を選択';
+            var formArea = document.getElementById('modalInput').parentNode;
+            formArea.innerHTML = '<label class="block text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wider">関与先リスト</label>' + html;
+
+            document.getElementById('modalSubmit').textContent = '紐付けを保存';
+            document.getElementById('modalSubmit').onclick = function () {
+                var checks = document.querySelectorAll('.assign-check:checked');
+                var selected = Array.from(checks).map(function (el) { return el.value; });
+                S.staff[staffName] = selected;
+                saveStaff();
+                closeModal();
+                setTimeout(restoreAddModal, 300);
+            };
+            document.getElementById('modal').classList.remove('hidden');
+        }
+
+        function restoreAddModal() {
+            var formArea = document.getElementById('modalTitle').nextElementSibling;
+            formArea.innerHTML = '<div><label class="block text-xs font-semibold text-slate-400 mb-1.5 uppercase tracking-wider">名称</label><input type="text" id="modalInput" placeholder="名称を入力" class="w-full bg-slate-900/60 border border-slate-600/50 rounded-lg px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all"></div><input type="hidden" id="modalOldName" value="">';
+        }
+
+        // --- Original Client Functions ---
+        function openTool(clientName) {
+            if (S.BASE_URL) {
+                window.top.location.href = S.BASE_URL + '?page=tool&client=' + encodeURIComponent(clientName);
+            }
+        }
+
+        function showAddModal() {
+            var isStaff = S.activeTab === 'staff';
+            restoreAddModal();
+            document.getElementById('modalTitle').textContent = isStaff ? '担当者を追加' : '関与先を追加';
+            document.getElementById('modalInput').placeholder = isStaff ? '例：田中 太郎' : '例：株式会社テスト';
+            document.getElementById('modalSubmit').textContent = '追加';
+            document.getElementById('modalSubmit').onclick = submitModal;
+            document.getElementById('modalInput').value = '';
+            document.getElementById('modal').classList.remove('hidden');
+            setTimeout(function () { document.getElementById('modalInput').focus() }, 100);
+        }
+
+        function showEditModal(name) {
+            restoreAddModal();
+            document.getElementById('modalTitle').textContent = '関与先名を変更';
+            document.getElementById('modalSubmit').textContent = '変更';
+            document.getElementById('modalInput').value = name;
+            document.getElementById('modalOldName').value = name;
+            document.getElementById('modalSubmit').onclick = submitModal;
+            document.getElementById('modal').classList.remove('hidden');
+            setTimeout(function () { document.getElementById('modalInput').focus(); }, 100);
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.add('hidden');
+        }
+
+        function submitModal() {
+            var input = document.getElementById('modalInput');
+            if (!input) return;
+            var val = input.value.trim();
+            if (!val) { toast('名称を入力してください', 'warning'); return; }
+
+            if (S.activeTab === 'staff') {
+                if (S.staff[val]) { toast('既に同名の担当者が存在します', 'warning'); return; }
+                S.staff[val] = [];
+                saveStaff();
+                closeModal();
+            } else {
+                var oldName = document.getElementById('modalOldName').value;
+                if (oldName) {
+                    google.script.run.withSuccessHandler(function (ok) {
+                        closeModal();
+                        if (ok) { toast('「' + val + '」に変更しました', 'success'); loadAllData(); }
+                        else { toast('変更に失敗しました', 'error'); }
+                    }).renameClientServer(oldName, val);
+                } else {
+                    google.script.run.withSuccessHandler(function (ok) {
+                        closeModal();
+                        if (ok) { toast('「' + val + '」を追加しました', 'success'); loadAllData(); }
+                        else { toast('追加に失敗しました', 'error'); }
+                    }).addClientServer(val);
+                }
+            }
+        }
+
+        var deleteTarget = '';
+        function showDeleteModal(name) {
+            deleteTarget = name;
+            document.getElementById('deleteTargetName').textContent = name;
+            document.getElementById('deleteModal').classList.remove('hidden');
+        }
+        function closeDeleteModal() {
+            document.getElementById('deleteModal').classList.add('hidden');
+            deleteTarget = '';
+        }
+        function confirmDelete() {
+            if (!deleteTarget) return;
+            google.script.run.withSuccessHandler(function (ok) {
+                closeDeleteModal();
+                if (ok) { toast('「' + deleteTarget + '」を削除しました', 'success'); loadAllData(); }
+                else { toast('削除に失敗しました', 'error'); }
+            }).deleteClientServer(deleteTarget);
+        }
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' && !document.getElementById('modal').classList.contains('hidden')) {
+                var btn = document.getElementById('modalSubmit');
+                if (btn) btn.click();
+            }
+            if (e.key === 'Escape') {
+                closeModal();
+                closeDeleteModal();
+            }
+        });
+
+        // Utilities
+        function esc(s) { var d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+        function escAttr(s) { return (s || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
+
+        function toast(msg, type) {
+            type = type || 'info';
+            var c = document.getElementById('toastBox');
+            var colors = { success: 'bg-emerald-600', error: 'bg-rose-600', warning: 'bg-amber-500', info: 'bg-slate-700' };
+            var t = document.createElement('div');
+            t.className = 'pointer-events-auto ' + (colors[type] || colors.info) + ' text-white px-4 py-2.5 rounded-xl shadow-lg text-xs font-medium max-w-sm';
+            t.style.animation = 'fadeUp .3s ease forwards';
+            t.textContent = msg;
+            c.appendChild(t);
+            setTimeout(function () { t.style.opacity = '0'; t.style.transition = 'opacity .3s'; setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 300); }, 3500);
+        }
+    </script>
+</body>
+
+</html>
