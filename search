@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>データ検索</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { theme: { extend: { fontFamily: { sans: ['"Noto Sans JP"', '"Inter"', 'system-ui', 'sans-serif'] } } } };
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;600;700;800&display=swap');
+
+        body {
+            background: #0f172a;
+        }
+
+        .nav-item {
+            transition: all .2s ease;
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, .08);
+        }
+
+        .nav-item.active {
+            background: rgba(99, 102, 241, .2);
+            border-right: 3px solid #818cf8;
+        }
+
+        .data-row {
+            transition: all .2s ease;
+        }
+
+        .data-row:hover {
+            background: rgba(99, 102, 241, .05);
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-up {
+            animation: fadeUp .4s ease forwards;
+            opacity: 0;
+        }
+
+        /* フォームのスタイル */
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+        }
+
+        .loading-spinner {
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            border-top: 3px solid #818cf8;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body class="min-h-screen font-sans text-slate-200">
+
+    <!-- ===== SIDEBAR ===== -->
+    <aside
+        class="fixed left-0 top-0 bottom-0 w-64 bg-slate-900/80 backdrop-blur-xl border-r border-slate-700/50 flex flex-col z-20">
+        <div class="px-5 py-5 border-b border-slate-700/50">
+            <div class="flex items-center gap-3">
+                <div
+                    class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-sm font-bold text-white tracking-tight">データ化ツール</h1>
+                    <p class="text-[10px] text-slate-400">Receipt Digitizer</p>
+                </div>
+            </div>
+        </div>
+        <nav class="flex-1 px-3 py-4 space-y-1">
+            <a id="navDashboard" href="#"
+                class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                </svg>
+                ダッシュボード
+            </a>
+            <a id="navTool" href="#"
+                class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                領収書データ化
+            </a>
+            <a id="navClients" href="#"
+                class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-white">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                関与先管理
+            </a>
+            <div class="pt-4 pb-2 px-3">
+                <p class="text-[10px] font-semibold text-slate-500 uppercase tracking-widest">Coming Soon</p>
+            </div>
+            <a href="#" onclick="return false;"
+                class="nav-item active flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white">
+                <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                データ検索
+            </a>
+            <span
+                class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 cursor-not-allowed">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                月次レポート
+            </span>
+            <span
+                class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-600 cursor-not-allowed">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                設定
+            </span>
+        </nav>
+        <div class="px-5 py-4 border-t border-slate-700/50">
+            <div class="flex items-center gap-2">
+                <div class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
+                <span class="text-[11px] text-slate-500">System Online</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- ===== MAIN CONTENT ===== -->
+    <main class="ml-64 min-h-screen">
+        <header class="sticky top-0 z-10 bg-slate-900/60 backdrop-blur-xl border-b border-slate-700/30 px-8 py-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-xl font-bold text-white">データ検索</h2>
+                    <p class="text-xs text-slate-400 mt-0.5">保存されたすべてのデータを検索・絞り込み</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span id="resultsCount" class="text-sm font-mono text-indigo-400 font-bold hidden">0件</span>
+                    <button onclick="clearSearch()"
+                        class="bg-slate-800 hover:bg-slate-700 border border-slate-600/50 text-sm font-medium text-slate-300 rounded-lg px-4 py-2 transition-all flex items-center gap-2">
+                        条件クリア
+                    </button>
+                    <button onclick="exportCsv()"
+                        class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg px-4 py-2 transition-all shadow-lg shadow-indigo-500/20 flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        CSV出力
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <div class="px-8 py-6 space-y-6">
+            <!-- ===== SEARCH FORM ===== -->
+            <div class="bg-slate-800/80 border border-slate-700/50 rounded-2xl p-6 fade-up">
+                <form id="searchForm" class="grid grid-cols-1 md:grid-cols-4 gap-4"
+                    onsubmit="event.preventDefault(); applySearch();">
+
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-semibold text-slate-400 mb-1.5">キーワード（支払先・摘要など）</label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                            </span>
+                            <input type="text" id="sKeyword" placeholder="検索キーワードを入力..."
+                                class="w-full bg-slate-900 border border-slate-600/50 rounded-lg pl-9 pr-4 py-2 text-sm text-white placeholder-slate-500 transition-colors">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 mb-1.5">関与先</label>
+                        <select id="sClient"
+                            class="w-full bg-slate-900 border border-slate-600/50 rounded-lg px-3 py-2 text-sm text-white transition-colors cursor-pointer">
+                            <option value="">すべて</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-400 mb-1.5">勘定科目</label>
+                        <select id="sAccount"
+                            class="w-full bg-slate-900 border border-slate-600/50 rounded-lg px-3 py-2 text-sm text-white transition-colors cursor-pointer">
+                            <option value="">すべて</option>
+                            <option>旅費交通費</option>
+                            <option>消耗品費</option>
+                            <option>接待交際費</option>
+                            <option>通信費</option>
+                            <option>水道光熱費</option>
+                            <option>地代家賃</option>
+                            <option>事務用品費</option>
+                            <option>広告宣伝費</option>
+                            <option>修繕費</option>
+                            <option>外注費</option>
+                            <option>福利厚生費</option>
+                            <option>租税公課</option>
+                            <option>保険料</option>
+                            <option>支払手数料</option>
+                            <option>新聞図書費</option>
+                            <option>会議費</option>
+                            <option>車両費</option>
+                            <option>荷造運賃</option>
+                            <option>雑費</option>
+                        </select>
+                    </div>
+
+                    <div class="md:col-span-2 flex items-end gap-2">
+                        <div class="flex-1">
+                            <label class="block text-xs font-semibold text-slate-400 mb-1.5">期間（From）</label>
+                            <input type="date" id="sDateFrom"
+                                class="w-full bg-slate-900 border border-slate-600/50 rounded-lg px-3 py-2 text-sm text-white transition-colors">
+                        </div>
+                        <span class="text-slate-500 mb-2">〜</span>
+                        <div class="flex-1">
+                            <label class="block text-xs font-semibold text-slate-400 mb-1.5">期間（To）</label>
+                            <input type="date" id="sDateTo"
+                                class="w-full bg-slate-900 border border-slate-600/50 rounded-lg px-3 py-2 text-sm text-white transition-colors">
+                        </div>
+                    </div>
+
+                    <div class="md:col-span-2 flex items-end gap-3 pt-2 md:pt-0">
+                        <button type="button" onclick="loadDataFromServer()"
+                            class="px-4 py-2 bg-slate-700/50 hover:bg-slate-700 text-slate-300 rounded-lg text-sm font-medium transition-colors border border-slate-600/50 flex items-center justify-center gap-2"
+                            id="btnReload">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                        </button>
+                        <button type="submit"
+                            class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg px-4 py-2 transition-all shadow-md text-sm">
+                            検索する
+                        </button>
+                    </div>
+
+                </form>
+            </div>
+
+            <!-- ===== RESULTS TABLE ===== -->
+            <div class="bg-slate-800/50 border border-slate-700/40 rounded-2xl overflow-hidden fade-up"
+                style="animation-delay: 0.1s;">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="border-b border-slate-700/50 bg-slate-800/80">
+                                <th
+                                    class="text-left px-5 py-3 text-[10px] font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">
+                                    日付</th>
+                                <th
+                                    class="text-left px-5 py-3 text-[10px] font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">
+                                    関与先</th>
+                                <th
+                                    class="text-left px-5 py-3 text-[10px] font-semibold text-slate-500 uppercase tracking-wider min-w-[150px]">
+                                    支払先</th>
+                                <th
+                                    class="text-right px-5 py-3 text-[10px] font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">
+                                    金額(税込)</th>
+                                <th
+                                    class="text-left px-5 py-3 text-[10px] font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">
+                                    勘定科目</th>
+                                <th
+                                    class="text-left px-5 py-3 text-[10px] font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">
+                                    インボイス</th>
+                                <th
+                                    class="text-left px-5 py-3 text-[10px] font-semibold text-slate-500 uppercase tracking-wider min-w-[150px]">
+                                    摘要</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resultsBody">
+                            <!-- 初期状態: ロード中 -->
+                            <tr>
+                                <td colspan="7" class="px-5 py-16 text-center">
+                                    <div class="flex flex-col items-center justify-center gap-3">
+                                        <div class="loading-spinner"></div>
+                                        <p class="text-slate-400 text-xs">データを読み込み中...</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <!-- Pagination / Footer Info -->
+                <div class="px-5 py-3 border-t border-slate-700/50 bg-slate-800/80 flex justify-between items-center text-xs text-slate-400"
+                    id="tableFooter">
+                    <span>全 <span id="totalItems" class="font-bold text-white">0</span> 件</span>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- ===== TOAST ===== -->
+    <div id="toastBox" class="fixed bottom-4 right-4 z-50 space-y-2 pointer-events-none"></div>
+
+    <script>
+        var BASE_URL = '';
+        var allData = []; // スプレッドシートからの全データキャッシュ
+        var filteredData = []; // 検索・フィルタリング後のデータ
+
+        document.addEventListener('DOMContentLoaded', function () {
+            // URL設定
+            google.script.run.withSuccessHandler(function (url) {
+                BASE_URL = url;
+                document.getElementById('navDashboard').onclick = function (e) { e.preventDefault(); window.top.location.href = url + '?page=dashboard'; };
+                document.getElementById('navTool').onclick = function (e) { e.preventDefault(); window.top.location.href = url + '?page=tool'; };
+                document.getElementById('navClients').onclick = function (e) { e.preventDefault(); window.top.location.href = url + '?page=clients'; };
+            }).getAppUrl();
+
+            // 初期データロード
+            loadDataFromServer();
+        });
+
+        // サーバーからデータを取得
+        function loadDataFromServer() {
+            var btnReload = document.getElementById('btnReload');
+            btnReload.classList.add('animate-pulse');
+
+            document.getElementById('resultsBody').innerHTML = '<tr><td colspan="7" class="px-5 py-16 text-center"><div class="flex flex-col items-center justify-center gap-3"><div class="loading-spinner"></div><p class="text-slate-400 text-xs">データを再読み込み中...</p></div></td></tr>';
+
+            google.script.run.withSuccessHandler(function (data) {
+                btnReload.classList.remove('animate-pulse');
+                allData = data || [];
+
+                // 関与先ドロップダウンの構築（一意な関与先を抽出）
+                var clients = [];
+                allData.forEach(function (item) {
+                    if (item.clientName && clients.indexOf(item.clientName) === -1) {
+                        clients.push(item.clientName);
+                    }
+                });
+                clients.sort();
+                var sClient = document.getElementById('sClient');
+                // 既存の選択状態を保持
+                var currentClient = sClient.value;
+                sClient.innerHTML = '<option value="">すべて</option>';
+                clients.forEach(function (c) {
+                    var opt = document.createElement('option');
+                    opt.value = c;
+                    opt.textContent = c;
+                    if (c === currentClient) opt.selected = true;
+                    sClient.appendChild(opt);
+                });
+
+                applySearch(); // 初回表示
+            }).withFailureHandler(function (e) {
+                btnReload.classList.remove('animate-pulse');
+                document.getElementById('resultsBody').innerHTML = '<tr><td colspan="7" class="px-5 py-8 text-center text-rose-400 text-xs">データ取得エラー: ' + esc(e.message) + '</td></tr>';
+            }).getAllSheetData();
+        }
+
+        // 検索実行
+        function applySearch() {
+            var kw = document.getElementById('sKeyword').value.trim().toLowerCase();
+            var client = document.getElementById('sClient').value;
+            var account = document.getElementById('sAccount').value;
+            var dFrom = document.getElementById('sDateFrom').value.replace(/-/g, '');
+            var dTo = document.getElementById('sDateTo').value.replace(/-/g, '');
+
+            filteredData = allData.filter(function (item) {
+                // 関与先
+                if (client && item.clientName !== client) return false;
+
+                // 勘定科目
+                if (account && item.account !== account) return false;
+
+                // 日付 (YYYYMMDD形式での比較)
+                var d = item.date || '00000000';
+                if (dFrom && d < dFrom) return false;
+                if (dTo && d > dTo) return false;
+
+                // キーワード（支払先、摘要、対象者、科目、ファイル名など）
+                if (kw) {
+                    var txt = (item.payee + ' ' + item.memo + ' ' + item.account + ' ' + item.invoiceNo + ' ' + item.fileName).toLowerCase();
+                    if (txt.indexOf(kw) === -1) return false;
+                }
+
+                return true;
+            });
+
+            // 年月・あるいは作成日時の新しい順でソート
+            filteredData.sort(function (a, b) {
+                var dA = a.createdAt || '0';
+                var dB = b.createdAt || '0';
+                if (dA < dB) return 1;
+                if (dA > dB) return -1;
+                return 0;
+            });
+
+            renderResults();
+        }
+
+        // 結果をテーブルに描画
+        function renderResults() {
+            var tbody = document.getElementById('resultsBody');
+            var resultsCount = document.getElementById('resultsCount');
+            var totalItems = document.getElementById('totalItems');
+
+            resultsCount.textContent = filteredData.length + '件';
+            resultsCount.classList.remove('hidden');
+            totalItems.textContent = filteredData.length;
+
+            if (filteredData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="px-5 py-12 text-center text-slate-500 text-xs">条件に一致するデータが見つかりません</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = '';
+
+            // 最大100件表示（ブラウザへの負荷考慮。全件CSV出力は可能）
+            var displayData = filteredData.slice(0, 100);
+
+            displayData.forEach(function (item) {
+                var tr = document.createElement('tr');
+                tr.className = 'data-row border-b border-slate-700/30';
+
+                // 日付のフォーマット (YYYYMMDD -> YYYY/MM/DD)
+                var dStr = (item.date || '').replace(/^(\d{4})(\d{2})(\d{2})$/, '$1/$2/$3');
+
+                tr.innerHTML =
+                    '<td class="px-5 py-3 text-slate-300 font-mono text-xs">' + esc(dStr) + '</td>' +
+                    '<td class="px-5 py-3"><span class="bg-slate-700/60 text-slate-300 px-2 py-0.5 rounded text-[10px] font-medium">' + esc(item.clientName) + '</span></td>' +
+                    '<td class="px-5 py-3 text-white font-medium">' + esc(item.payee) + '</td>' +
+                    '<td class="px-5 py-3 text-right text-emerald-400 font-semibold font-mono">¥' + Number(item.amount).toLocaleString() + '</td>' +
+                    '<td class="px-5 py-3 text-slate-400 text-xs">' + esc(item.account) + '</td>' +
+                    '<td class="px-5 py-3 text-slate-400 font-mono text-xs">' + esc(item.invoiceNo) + '</td>' +
+                    '<td class="px-5 py-3 text-slate-400 text-xs max-w-xs truncate" title="' + escAttr(item.memo) + '">' + esc(item.memo) + '</td>';
+                tbody.appendChild(tr);
+            });
+
+            if (filteredData.length > 100) {
+                var tr = document.createElement('tr');
+                tr.innerHTML = '<td colspan="7" class="px-5 py-4 text-center text-slate-400 text-xs bg-slate-800/30">100件以降はCSV出力にてご確認ください（全 ' + filteredData.length + '件）</td>';
+                tbody.appendChild(tr);
+            }
+        }
+
+        // 検索条件リセット
+        function clearSearch() {
+            document.getElementById('searchForm').reset();
+            applySearch();
+        }
+
+        // CSV出力
+        function exportCsv() {
+            if (filteredData.length === 0) {
+                toast('出力するデータがありません', 'warning');
+                return;
+            }
+
+            var header = ['ID', '関与先', '日付', '支払先', '金額', '10%金額', '8%金額', '勘定科目', 'インボイス番号', '摘要', 'ファイル名', '作成日時'];
+            var csvStr = '\uFEFF' + header.join(',') + '\n';
+
+            filteredData.forEach(function (item) {
+                var row = [
+                    item.id,
+                    item.clientName,
+                    item.date,
+                    item.payee,
+                    item.amount,
+                    item.amount10,
+                    item.amount8,
+                    item.account,
+                    item.invoiceNo,
+                    item.memo,
+                    item.fileName,
+                    item.createdAt
+                ];
+
+                // エスケープ処理（カンマや改行を含む場合）
+                var escapedRow = row.map(function (cell) {
+                    var str = String(cell || '');
+                    if (str.indexOf(',') !== -1 || str.indexOf('"') !== -1 || str.indexOf('\n') !== -1) {
+                        return '"' + str.replace(/"/g, '""') + '"';
+                    }
+                    return str;
+                });
+
+                csvStr += escapedRow.join(',') + '\n';
+            });
+
+            var blob = new Blob([csvStr], { type: 'text/csv;charset=utf-8;' });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = 'ReceiptData_' + new Date().getTime() + '.csv';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            toast('CSVをダウンロードしました', 'success');
+        }
+
+        // ==== Utils ====
+        function esc(s) { var d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+        function escAttr(s) { return (s || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
+        function toast(msg, type) {
+            type = type || 'info';
+            var c = document.getElementById('toastBox');
+            var colors = { success: 'bg-emerald-600', error: 'bg-rose-600', warning: 'bg-amber-500', info: 'bg-slate-700' };
+            var t = document.createElement('div');
+            t.className = 'pointer-events-auto ' + (colors[type] || colors.info) + ' text-white px-4 py-2.5 rounded-xl shadow-lg text-xs font-medium max-w-sm border border-slate-600';
+            t.style.animation = 'fadeUp .3s ease forwards';
+            t.textContent = msg;
+            c.appendChild(t);
+            setTimeout(function () { t.style.opacity = '0'; t.style.transition = 'opacity .3s'; setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 300); }, 3500);
+        }
+    </script>
+</body>
+
+</html>
